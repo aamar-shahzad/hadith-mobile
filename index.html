@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hadith Mobile">
+  <meta name="description" content="Mobile Hadith reader — Kutub al-Sittah and more, multilingual, offline-friendly PWA">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2997/2997982.png">
+  <title>Hadith Mobile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309' },
+            dark: { bg: '#0f172a', card: '#1e293b', border: '#334155' }
+          },
+          fontFamily: {
+            amiri: ['Amiri', 'serif'],
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .arabic-text { font-family: 'Amiri', serif; line-height: 2.2; }
+    .pt-safe { padding-top: env(safe-area-inset-top, 0.75rem); }
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0.75rem); }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-dark-bg text-slate-100 flex flex-col h-screen overflow-hidden antialiased">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+
+  <header class="bg-dark-card border-b border-dark-border px-4 py-3 shrink-0 pt-safe z-20">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center text-slate-950 font-bold shadow-sm shrink-0">📜</div>
+        <div class="min-w-0">
+          <h1 class="font-bold text-sm text-white truncate">Hadith Mobile</h1>
+          <p id="headerSubtitle" class="text-[11px] text-slate-400 truncate">Loading…</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <a href="https://aamar-shahzad.github.io/quran-mobile/" class="p-2 text-slate-400 hover:text-brand-400 rounded-xl hover:bg-slate-800 transition" title="Quran app">
+          <i class="ph ph-book-open-text text-lg"></i>
+        </a>
+        <button type="button" id="btnOpenInstallGuide" class="p-2 text-brand-400 hover:text-white rounded-xl hover:bg-slate-800 transition" title="Install PWA">
+          <i class="ph ph-device-mobile text-lg"></i>
+        </button>
+        <button type="button" id="btnOpenBookmarks" class="p-2 text-slate-300 hover:text-white rounded-xl hover:bg-slate-800 transition relative" title="Bookmarks">
+          <i class="ph ph-bookmark-simple text-lg"></i>
+          <span id="bookmarkDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="bg-dark-card/95 border-b border-dark-border p-3 space-y-2 shrink-0 z-10">
+    <div class="relative">
+      <select id="collectionSelect" class="w-full bg-slate-900 border border-slate-700 text-slate-100 text-sm rounded-xl py-2.5 px-3 pr-8 appearance-none focus:outline-none focus:border-brand-500 font-medium">
+        <option value="">Loading collections…</option>
+      </select>
+      <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+      <div class="relative">
+        <select id="editionSelect" class="w-full bg-slate-950 border border-slate-800 text-slate-300 text-[11px] rounded-xl py-2 px-2 pr-6 appearance-none focus:outline-none focus:border-brand-500 truncate"></select>
+        <i class="ph ph-caret-down absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-xs"></i>
+      </div>
+      <div class="relative">
+        <select id="sectionSelect" class="w-full bg-slate-950 border border-slate-800 text-slate-300 text-[11px] rounded-xl py-2 px-2 pr-6 appearance-none focus:outline-none focus:border-brand-500 truncate">
+          <option value="all">All chapters</option>
+        </select>
+        <i class="ph ph-caret-down absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-xs"></i>
+      </div>
+    </div>
+    <div class="relative">
+      <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+      <input id="searchInput" type="search" placeholder="Search hadith text or number…" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-brand-500" autocomplete="off">
+    </div>
+  </div>
+
+  <main id="hadithScroll" class="flex-1 overflow-y-auto px-3 py-3 pb-safe space-y-3">
+    <div id="loadingState" class="hidden text-center py-16 text-slate-400 text-sm">
+      <i class="ph ph-spinner animate-spin text-2xl text-brand-500"></i>
+      <p class="mt-2">Loading hadith collection…</p>
+    </div>
+    <div id="hadithList" class="space-y-3"></div>
+    <div id="emptyState" class="hidden text-center py-12 text-slate-500 text-xs">No hadith match your search.</div>
+  </main>
+
+  <footer class="bg-dark-card border-t border-dark-border px-4 py-2 shrink-0 pb-safe flex items-center justify-between text-[11px] text-slate-400">
+    <button type="button" id="btnPrevPage" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-brand-500 disabled:opacity-40">Previous</button>
+    <span id="pageLabel">Page 1</span>
+    <button type="button" id="btnNextPage" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-brand-500 disabled:opacity-40">Next</button>
+  </footer>
+
+  <!-- Bookmarks modal -->
+  <div id="bookmarksModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+    <div class="bg-dark-card border border-dark-border rounded-2xl p-4 max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+        <h2 class="font-bold text-sm text-white">Saved hadith</h2>
+        <button type="button" id="closeBookmarksModal" class="text-slate-400 hover:text-white p-1"><i class="ph ph-x text-lg"></i></button>
+      </div>
+      <ul id="bookmarksList" class="overflow-y-auto flex-1 space-y-2 text-xs"></ul>
+    </div>
+  </div>
+
+  <!-- Install guide -->
+  <div id="installModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-dark-card border border-dark-border rounded-2xl p-5 max-w-sm w-full shadow-2xl">
+      <h3 class="font-bold text-white text-sm mb-2">Install Hadith Mobile</h3>
+      <p class="text-xs text-slate-300 mb-3">Open on your phone, then add to home screen for a full-screen app.</p>
+      <a id="officialLink" href="https://aamar-shahzad.github.io/hadith-mobile/" class="text-[11px] text-brand-400 break-all block mb-3">https://aamar-shahzad.github.io/hadith-mobile/</a>
+      <ul class="text-[11px] text-slate-400 space-y-1 mb-4 list-disc list-inside">
+        <li><strong class="text-slate-200">Android:</strong> Chrome → Install app</li>
+        <li><strong class="text-slate-200">iPhone:</strong> Safari → Share → Add to Home Screen</li>
+      </ul>
+      <button type="button" id="closeInstallModal" class="w-full bg-brand-600 hover:bg-brand-500 text-white py-2 rounded-xl text-sm font-semibold">Got it</button>
+    </div>
+  </div>
+
+  <script>
+    const HADITH_CDN = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1';
+    const PAGE_SIZE = 12;
+
+    const COLLECTION_LABELS = {
+      bukhari: 'Sahih al-Bukhari',
+      muslim: 'Sahih Muslim',
+      abudawud: 'Sunan Abu Dawud',
+      tirmidhi: 'Jami` at-Tirmidhi',
+      nasai: "Sunan an-Nasa'i",
+      ibnmajah: 'Sunan Ibn Majah',
+      malik: 'Muwatta Malik',
+      nawawi: 'An-Nawawi\'s 40 Hadith',
+      qudsi: 'Forty Hadith Qudsi',
+      dehlawi: 'Shah Waliullah Dehlawi'
+    };
+
+    const state = {
+      catalog: null,
+      collectionKey: localStorage.getItem('hadith_collection') || 'bukhari',
+      editionName: localStorage.getItem('hadith_edition') || 'eng-bukhari',
+      sectionKey: 'all',
+      allHadiths: [],
+      filteredHadiths: [],
+      metadata: null,
+      isRtl: false,
+      page: 1,
+      searchQuery: '',
+      bookmarks: JSON.parse(localStorage.getItem('hadith_bookmarks_v1') || '[]')
+    };
+
+    const collectionSelect = document.getElementById('collectionSelect');
+    const editionSelect = document.getElementById('editionSelect');
+    const sectionSelect = document.getElementById('sectionSelect');
+    const hadithList = document.getElementById('hadithList');
+    const loadingState = document.getElementById('loadingState');
+    const emptyState = document.getElementById('emptyState');
+    const headerSubtitle = document.getElementById('headerSubtitle');
+    const pageLabel = document.getElementById('pageLabel');
+    const searchInput = document.getElementById('searchInput');
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function hadithId(h) {
+      return `${state.editionName}:${h.hadithnumber}`;
+    }
+
+    function isBookmarked(h) {
+      const id = hadithId(h);
+      return state.bookmarks.some((b) => b.id === id);
+    }
+
+    function updateBookmarkDot() {
+      const dot = document.getElementById('bookmarkDot');
+      if (dot) dot.classList.toggle('hidden', state.bookmarks.length === 0);
+    }
+
+    function saveBookmarks() {
+      localStorage.setItem('hadith_bookmarks_v1', JSON.stringify(state.bookmarks));
+      updateBookmarkDot();
+    }
+
+    async function loadCatalog() {
+      const res = await fetch(`${HADITH_CDN}/editions.json`);
+      state.catalog = await res.json();
+      collectionSelect.innerHTML = Object.keys(state.catalog)
+        .sort()
+        .map((key) => `<option value="${key}">${COLLECTION_LABELS[key] || state.catalog[key].name || key}</option>`)
+        .join('');
+      collectionSelect.value = state.collectionKey in state.catalog ? state.collectionKey : 'bukhari';
+      populateEditions();
+    }
+
+    function populateEditions() {
+      const collection = state.catalog[collectionSelect.value];
+      state.collectionKey = collectionSelect.value;
+      localStorage.setItem('hadith_collection', state.collectionKey);
+      if (!collection || !collection.collection) return;
+
+      editionSelect.innerHTML = collection.collection
+        .map((ed) => `<option value="${ed.name}">${ed.language} — ${ed.name}${ed.comments ? ' (' + ed.comments + ')' : ''}</option>`)
+        .join('');
+
+      const hasStored = collection.collection.some((e) => e.name === state.editionName);
+      if (!hasStored) {
+        state.editionName = collection.collection.find((e) => e.language === 'English')?.name
+          || collection.collection[0]?.name;
+      }
+      editionSelect.value = state.editionName;
+    }
+
+    function populateSections() {
+      sectionSelect.innerHTML = '<option value="all">All chapters</option>';
+      const sections = state.metadata?.sections;
+      if (!sections) return;
+      sections.forEach((title, index) => {
+        if (!title || index === 0) return;
+        const opt = document.createElement('option');
+        opt.value = String(index);
+        const label = title.length > 52 ? `${title.slice(0, 49)}…` : title;
+        opt.textContent = `${index}. ${label}`;
+        sectionSelect.appendChild(opt);
+      });
+      sectionSelect.value = state.sectionKey;
+    }
+
+    function applyFilters() {
+      let list = state.allHadiths;
+      if (state.sectionKey !== 'all') {
+        const det = state.metadata?.section_details?.[String(state.sectionKey)];
+        if (det) {
+          list = list.filter(
+            (h) => h.hadithnumber >= det.hadithnumber_first && h.hadithnumber <= det.hadithnumber_last
+          );
+        }
+      }
+      const q = state.searchQuery.trim().toLowerCase();
+      if (q) {
+        list = list.filter((h) => {
+          const num = String(h.hadithnumber);
+          const ar = String(h.arabicnumber || '');
+          return num.includes(q) || ar.includes(q) || (h.text && h.text.toLowerCase().includes(q));
+        });
+      }
+      state.filteredHadiths = list;
+      state.page = 1;
+      renderPage();
+    }
+
+    function renderPage() {
+      const total = state.filteredHadiths.length;
+      const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      if (state.page > totalPages) state.page = totalPages;
+      const start = (state.page - 1) * PAGE_SIZE;
+      const slice = state.filteredHadiths.slice(start, start + PAGE_SIZE);
+
+      emptyState.classList.toggle('hidden', total > 0);
+      hadithList.classList.toggle('hidden', total === 0);
+
+      pageLabel.textContent = total
+        ? `Page ${state.page} / ${totalPages} · ${total} hadith`
+        : 'No results';
+
+      document.getElementById('btnPrevPage').disabled = state.page <= 1;
+      document.getElementById('btnNextPage').disabled = state.page >= totalPages;
+
+      hadithList.innerHTML = slice.map((h) => {
+        const bookmarked = isBookmarked(h);
+        const grades = (h.grades || []).map((g) => g.grade).filter(Boolean).join(', ');
+        const ref = h.reference ? `Book ${h.reference.book}, Hadith ${h.reference.hadith}` : '';
+        const textClass = state.isRtl ? 'arabic-text text-right text-lg text-amber-100/95' : 'text-sm text-slate-200 leading-relaxed';
+        const dir = state.isRtl ? 'rtl' : 'ltr';
+        return `
+          <article class="bg-dark-card border border-dark-border rounded-2xl p-4" dir="${dir}">
+            <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-800">
+              <span class="text-[11px] font-bold text-brand-400">#${h.hadithnumber}${h.arabicnumber ? ' · ' + h.arabicnumber : ''}</span>
+              <div class="flex gap-1">
+                <button type="button" data-copy="${h.hadithnumber}" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800" title="Copy"><i class="ph ph-copy"></i></button>
+                <button type="button" data-bookmark="${h.hadithnumber}" class="p-1.5 ${bookmarked ? 'text-brand-500' : 'text-slate-400 hover:text-white'} rounded-lg hover:bg-slate-800" title="Bookmark"><i class="${bookmarked ? 'ph-fill' : 'ph'} ph-bookmark-simple"></i></button>
+              </div>
+            </div>
+            <p class="${textClass}">${escapeHtml(h.text || '')}</p>
+            ${grades ? `<p class="mt-2 text-[10px] text-emerald-400/90">Grade: ${escapeHtml(grades)}</p>` : ''}
+            ${ref ? `<p class="mt-1 text-[10px] text-slate-500">${escapeHtml(ref)}</p>` : ''}
+          </article>`;
+      }).join('');
+
+      hadithList.querySelectorAll('[data-copy]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const num = Number(btn.getAttribute('data-copy'));
+          const h = state.allHadiths.find((x) => x.hadithnumber === num);
+          if (!h) return;
+          const label = COLLECTION_LABELS[state.collectionKey] || state.collectionKey;
+          const text = `${label} ${h.hadithnumber}\n\n${h.text}`;
+          navigator.clipboard?.writeText(text).then(() => alert('Copied')).catch(() => window.prompt('Copy:', text));
+        });
+      });
+
+      hadithList.querySelectorAll('[data-bookmark]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const num = Number(btn.getAttribute('data-bookmark'));
+          const h = state.allHadiths.find((x) => x.hadithnumber === num);
+          if (!h) return;
+          const id = hadithId(h);
+          const idx = state.bookmarks.findIndex((b) => b.id === id);
+          if (idx >= 0) state.bookmarks.splice(idx, 1);
+          else {
+            state.bookmarks.unshift({
+              id,
+              collectionKey: state.collectionKey,
+              editionName: state.editionName,
+              hadithnumber: h.hadithnumber,
+              preview: (h.text || '').slice(0, 120),
+              label: COLLECTION_LABELS[state.collectionKey] || state.collectionKey
+            });
+          }
+          saveBookmarks();
+          renderPage();
+        });
+      });
+    }
+
+    async function loadEdition() {
+      const collection = state.catalog[state.collectionKey];
+      const edition = collection?.collection?.find((e) => e.name === state.editionName);
+      if (!edition) return;
+
+      state.editionName = edition.name;
+      state.isRtl = edition.direction === 'rtl';
+      localStorage.setItem('hadith_edition', state.editionName);
+      state.sectionKey = 'all';
+      sectionSelect.value = 'all';
+
+      loadingState.classList.remove('hidden');
+      hadithList.innerHTML = '';
+      headerSubtitle.textContent = `${COLLECTION_LABELS[state.collectionKey] || collection.name} · ${edition.language}`;
+
+      try {
+        const url = edition.linkmin || edition.link;
+        const res = await fetch(url);
+        const data = await res.json();
+        state.metadata = data.metadata;
+        state.allHadiths = data.hadiths || [];
+        populateSections();
+        applyFilters();
+      } catch (err) {
+        hadithList.innerHTML = '<p class="text-center text-red-400 text-xs py-8">Failed to load. Check connection.</p>';
+      } finally {
+        loadingState.classList.add('hidden');
+      }
+    }
+
+    function renderBookmarksList() {
+      const ul = document.getElementById('bookmarksList');
+      if (!ul) return;
+      if (!state.bookmarks.length) {
+        ul.innerHTML = '<li class="text-slate-500 text-center py-6">No bookmarks yet.</li>';
+        return;
+      }
+      ul.innerHTML = state.bookmarks.map((b) => `
+        <li class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+          <button type="button" data-open-bookmark="${escapeHtml(b.id)}" class="text-left w-full">
+            <span class="text-brand-400 font-semibold">${escapeHtml(b.label)} #${b.hadithnumber}</span>
+            <p class="text-slate-400 mt-1 line-clamp-2">${escapeHtml(b.preview)}…</p>
+          </button>
+        </li>`).join('');
+
+      ul.querySelectorAll('[data-open-bookmark]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-open-bookmark');
+          const b = state.bookmarks.find((x) => x.id === id);
+          if (!b) return;
+          document.getElementById('bookmarksModal').classList.add('hidden');
+          collectionSelect.value = b.collectionKey;
+          populateEditions();
+          editionSelect.value = b.editionName;
+          state.collectionKey = b.collectionKey;
+          state.editionName = b.editionName;
+          await loadEdition();
+          state.searchQuery = String(b.hadithnumber);
+          searchInput.value = state.searchQuery;
+          applyFilters();
+          const target = document.querySelector(`[data-copy="${b.hadithnumber}"]`);
+          target?.closest('article')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      updateBookmarkDot();
+      loadCatalog().then(() => loadEdition());
+
+      collectionSelect.addEventListener('change', () => {
+        populateEditions();
+        loadEdition();
+      });
+      editionSelect.addEventListener('change', () => {
+        state.editionName = editionSelect.value;
+        loadEdition();
+      });
+      sectionSelect.addEventListener('change', () => {
+        state.sectionKey = sectionSelect.value;
+        applyFilters();
+      });
+      searchInput.addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        applyFilters();
+      });
+      document.getElementById('btnPrevPage').addEventListener('click', () => {
+        if (state.page > 1) { state.page -= 1; renderPage(); }
+      });
+      document.getElementById('btnNextPage').addEventListener('click', () => {
+        const totalPages = Math.ceil(state.filteredHadiths.length / PAGE_SIZE) || 1;
+        if (state.page < totalPages) { state.page += 1; renderPage(); }
+      });
+
+      document.getElementById('btnOpenBookmarks').addEventListener('click', () => {
+        renderBookmarksList();
+        document.getElementById('bookmarksModal').classList.remove('hidden');
+      });
+      document.getElementById('closeBookmarksModal').addEventListener('click', () => {
+        document.getElementById('bookmarksModal').classList.add('hidden');
+      });
+      document.getElementById('btnOpenInstallGuide').addEventListener('click', () => {
+        document.getElementById('installModal').classList.remove('hidden');
+      });
+      document.getElementById('closeInstallModal').addEventListener('click', () => {
+        document.getElementById('installModal').classList.add('hidden');
+      });
+    });
+  </script>
+</body>
+</html>

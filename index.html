@@ -226,6 +226,7 @@
 
     async function loadCatalog() {
       const res = await fetch(`${HADITH_CDN}/editions.json`);
+      if (!res.ok) throw new Error(`Catalog HTTP ${res.status}`);
       state.catalog = await res.json();
       collectionSelect.innerHTML = Object.keys(state.catalog)
         .sort()
@@ -253,12 +254,18 @@
       editionSelect.value = state.editionName;
     }
 
+    function getSectionEntries(sections) {
+      if (!sections) return [];
+      if (Array.isArray(sections)) {
+        return sections.map((title, index) => [String(index), title]);
+      }
+      return Object.entries(sections);
+    }
+
     function populateSections() {
       sectionSelect.innerHTML = '<option value="all">All chapters</option>';
-      const sections = state.metadata?.sections;
-      if (!sections) return;
-      sections.forEach((title, index) => {
-        if (!title || index === 0) return;
+      getSectionEntries(state.metadata?.sections).forEach(([index, title]) => {
+        if (!title || index === '0') return;
         const opt = document.createElement('option');
         opt.value = String(index);
         const label = title.length > 52 ? `${title.slice(0, 49)}…` : title;
@@ -382,13 +389,16 @@
       try {
         const url = edition.linkmin || edition.link;
         const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+        if (!data?.hadiths?.length) throw new Error('Empty hadith data');
         state.metadata = data.metadata;
-        state.allHadiths = data.hadiths || [];
+        state.allHadiths = data.hadiths;
         populateSections();
         applyFilters();
       } catch (err) {
-        hadithList.innerHTML = '<p class="text-center text-red-400 text-xs py-8">Failed to load. Check connection.</p>';
+        console.error('Hadith load failed', err);
+        hadithList.innerHTML = '<p class="text-center text-red-400 text-xs py-8">Failed to load this edition. Try another language or refresh.</p>';
       } finally {
         loadingState.classList.add('hidden');
       }
@@ -432,7 +442,13 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       updateBookmarkDot();
-      loadCatalog().then(() => loadEdition());
+      loadCatalog()
+        .then(() => loadEdition())
+        .catch((err) => {
+          console.error('Hadith catalog failed', err);
+          headerSubtitle.textContent = 'Could not load catalog';
+          hadithList.innerHTML = '<p class="text-center text-red-400 text-xs py-8">Failed to load collections. Check connection and refresh.</p>';
+        });
 
       collectionSelect.addEventListener('change', () => {
         populateEditions();

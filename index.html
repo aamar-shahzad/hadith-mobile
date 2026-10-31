@@ -10,7 +10,8 @@
   <meta name="apple-mobile-web-app-title" content="Hadith Mobile">
   <meta name="description" content="Mobile Hadith reader — Kutub al-Sittah and more, multilingual, offline-friendly PWA">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2997/2997982.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <title>Hadith Mobile</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -47,7 +48,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=2').catch(() => {});
+        navigator.serviceWorker.register('sw.js?v=3').catch(() => {});
       });
     }
   </script>
@@ -530,11 +531,14 @@
         document.getElementById('bookmarksModal').classList.add('hidden');
       });
       document.getElementById('btnOpenInstallGuide').addEventListener('click', () => {
+        refreshShareInstallModal();
         document.getElementById('installModal').classList.remove('hidden');
       });
       document.getElementById('closeInstallModal').addEventListener('click', () => {
         document.getElementById('installModal').classList.add('hidden');
       });
+      document.getElementById('btnCopyAppLink').addEventListener('click', () => copyAppPublicLink(document.getElementById('btnCopyAppLink')));
+      document.getElementById('btnNativeShareApp').addEventListener('click', () => nativeShareAppLink());
     });
   </script>
 </body>

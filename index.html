@@ -99,6 +99,9 @@
         <a href="https://aamar-shahzad.github.io/quran-mobile/" class="p-2 text-slate-400 hover:text-brand-400 rounded-xl hover:bg-slate-800 transition" title="Quran app">
           <i class="ph ph-book-open-text text-lg"></i>
         </a>
+        <button type="button" id="btnOpenSourcesModal" class="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition" title="Data sources">
+          <i class="ph ph-info text-lg"></i>
+        </button>
         <button type="button" id="btnOpenInstallGuide" class="p-2 text-brand-400 hover:text-white rounded-xl hover:bg-slate-800 transition" title="Share link & install app">
           <i class="ph ph-share-network text-lg"></i>
         </button>
@@ -158,6 +161,21 @@
         <button type="button" id="closeBookmarksModal" class="text-slate-400 hover:text-white p-1"><i class="ph ph-x text-lg"></i></button>
       </div>
       <ul id="bookmarksList" class="overflow-y-auto flex-1 space-y-2 text-xs"></ul>
+    </div>
+  </div>
+
+  <div id="sourcesModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-dark-card border border-dark-border rounded-2xl p-5 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+        <h3 class="font-bold text-sm text-white flex items-center gap-2"><i class="ph ph-database text-brand-400"></i> Authentic data sources</h3>
+        <button type="button" id="closeSourcesModal" class="text-slate-400 hover:text-white p-1"><i class="ph ph-x text-lg"></i></button>
+      </div>
+      <div class="text-[11px] text-slate-300 space-y-3">
+        <p>Hadith text is loaded from the open <strong class="text-slate-200">hadith-api</strong> project — standard collections (Bukhari, Muslim, Sunan, etc.) in multiple languages.</p>
+        <p><a class="text-brand-400 underline break-all" href="https://github.com/fawazahmed0/hadith-api" target="_blank" rel="noopener noreferrer">github.com/fawazahmed0/hadith-api</a></p>
+        <p>CDN: <code class="text-slate-400">cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1</code></p>
+        <p class="text-slate-500 text-[10px]">Translations follow published hadith editions in that dataset (e.g. English Dar-us-Salam style for Sahihayn). Verify critical matters with scholars and printed references.</p>
+      </div>
     </div>
   </div>
 
@@ -613,6 +631,11 @@
       document.getElementById('closeBookmarksModal').addEventListener('click', () => {
         document.getElementById('bookmarksModal').classList.add('hidden');
       });
+      const sourcesModal = document.getElementById('sourcesModal');
+      document.getElementById('btnOpenSourcesModal').addEventListener('click', () => sourcesModal.classList.remove('hidden'));
+      document.getElementById('closeSourcesModal').addEventListener('click', () => sourcesModal.classList.add('hidden'));
+      bindModalBackdropClose(sourcesModal, () => sourcesModal.classList.add('hidden'));
+
       document.getElementById('btnOpenInstallGuide').addEventListener('click', () => {
         refreshShareInstallModal();
         document.getElementById('installModal').classList.remove('hidden');

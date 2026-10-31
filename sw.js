@@ -1,4 +1,4 @@
-const CACHE_NAME = "hadith-mobile-v3";
+const CACHE_NAME = "hadith-mobile-v4";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

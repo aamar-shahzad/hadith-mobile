@@ -45,10 +45,43 @@
   </style>
 </head>
 <body class="bg-dark-bg text-slate-100 flex flex-col h-screen overflow-hidden antialiased">
+  <div id="appUpdateBanner" class="hidden fixed bottom-16 left-3 right-3 z-[70] bg-brand-600 text-white text-xs rounded-xl px-4 py-3 shadow-xl border border-brand-500 flex items-center justify-between gap-3">
+    <span>New version available</span>
+    <button type="button" id="btnApplyAppUpdate" class="shrink-0 bg-white text-brand-800 font-bold px-3 py-1.5 rounded-lg">Update</button>
+  </div>
+
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=4').catch(() => {});
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+
+        navigator.serviceWorker.register('sw.js?v=5').then((registration) => {
+          registration.addEventListener('updatefound', () => {
+            const worker = registration.installing;
+            if (!worker) return;
+            worker.addEventListener('statechange', () => {
+              if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                document.getElementById('appUpdateBanner')?.classList.remove('hidden');
+              }
+            });
+          });
+          if (registration.waiting && navigator.serviceWorker.controller) {
+            document.getElementById('appUpdateBanner')?.classList.remove('hidden');
+          }
+          setInterval(() => registration.update(), 60 * 60 * 1000);
+        }).catch(() => {});
+
+        document.getElementById('btnApplyAppUpdate')?.addEventListener('click', () => {
+          navigator.serviceWorker.getRegistration().then((reg) => {
+            if (reg?.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            else window.location.reload();
+          });
+        });
       });
     }
   </script>
@@ -232,7 +265,13 @@
       isRtl: false,
       page: 1,
       searchQuery: '',
-      bookmarks: JSON.parse(localStorage.getItem('hadith_bookmarks_v1') || '[]')
+      bookmarks: (() => {
+        try {
+          return JSON.parse(localStorage.getItem('hadith_bookmarks_v1') || '[]');
+        } catch {
+          return [];
+        }
+      })()
     };
 
     const collectionSelect = document.getElementById('collectionSelect');
@@ -290,9 +329,14 @@
       localStorage.setItem('hadith_collection', state.collectionKey);
       if (!collection || !collection.collection) return;
 
-      editionSelect.innerHTML = collection.collection
-        .map((ed) => `<option value="${ed.name}">${ed.language} — ${ed.name}${ed.comments ? ' (' + ed.comments + ')' : ''}</option>`)
-        .join('');
+      editionSelect.innerHTML = '';
+      collection.collection.forEach((ed) => {
+        const opt = document.createElement('option');
+        opt.value = ed.name;
+        const comment = ed.comments ? ` (${ed.comments})` : '';
+        opt.textContent = `${ed.language} — ${ed.name}${comment}`;
+        editionSelect.appendChild(opt);
+      });
 
       const hasStored = collection.collection.some((e) => e.name === state.editionName);
       if (!hasStored) {
@@ -300,6 +344,33 @@
           || collection.collection[0]?.name;
       }
       editionSelect.value = state.editionName;
+    }
+
+    function showToast(message) {
+      let el = document.getElementById('appToast');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'appToast';
+        el.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-4 py-2 rounded-xl border border-slate-700 shadow-lg z-[60] opacity-0 pointer-events-none transition-opacity duration-300';
+        document.body.appendChild(el);
+      }
+      el.textContent = message;
+      el.classList.remove('opacity-0');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => el.classList.add('opacity-0'), 2200);
+    }
+
+    function bindModalBackdropClose(modalEl, closeFn) {
+      if (!modalEl) return;
+      modalEl.addEventListener('click', (e) => {
+        if (e.target === modalEl) closeFn();
+      });
+    }
+
+    function formatHadithGrades(grades) {
+      if (!grades) return '';
+      const list = Array.isArray(grades) ? grades : [grades];
+      return list.map((g) => (typeof g === 'string' ? g : g?.grade)).filter(Boolean).join(', ');
     }
 
     function getSectionEntries(sections) {
@@ -365,7 +436,7 @@
 
       hadithList.innerHTML = slice.map((h) => {
         const bookmarked = isBookmarked(h);
-        const grades = (h.grades || []).map((g) => g.grade).filter(Boolean).join(', ');
+        const grades = formatHadithGrades(h.grades);
         const ref = h.reference ? `Book ${h.reference.book}, Hadith ${h.reference.hadith}` : '';
         const textClass = state.isRtl ? 'arabic-text text-right text-lg text-amber-100/95' : 'text-sm text-slate-200 leading-relaxed';
         const dir = state.isRtl ? 'rtl' : 'ltr';
@@ -391,7 +462,7 @@
           if (!h) return;
           const label = COLLECTION_LABELS[state.collectionKey] || state.collectionKey;
           const text = `${label} ${h.hadithnumber}\n\n${h.text}`;
-          navigator.clipboard?.writeText(text).then(() => alert('Copied')).catch(() => window.prompt('Copy:', text));
+          navigator.clipboard?.writeText(text).then(() => showToast('Hadith copied')).catch(() => window.prompt('Copy:', text));
         });
       });
 
@@ -420,9 +491,14 @@
     }
 
     async function loadEdition() {
+      state.collectionKey = collectionSelect.value;
+      state.editionName = editionSelect.value;
       const collection = state.catalog[state.collectionKey];
       const edition = collection?.collection?.find((e) => e.name === state.editionName);
-      if (!edition) return;
+      if (!edition) {
+        hadithList.innerHTML = '<p class="text-center text-red-400 text-xs py-8">Edition not found. Choose another language.</p>';
+        return;
+      }
 
       state.editionName = edition.name;
       state.isRtl = edition.direction === 'rtl';
@@ -461,7 +537,7 @@
       }
       ul.innerHTML = state.bookmarks.map((b) => `
         <li class="bg-slate-900 border border-slate-800 rounded-xl p-3">
-          <button type="button" data-open-bookmark="${escapeHtml(b.id)}" class="text-left w-full">
+          <button type="button" data-open-bookmark="${encodeURIComponent(b.id)}" class="text-left w-full">
             <span class="text-brand-400 font-semibold">${escapeHtml(b.label)} #${b.hadithnumber}</span>
             <p class="text-slate-400 mt-1 line-clamp-2">${escapeHtml(b.preview)}…</p>
           </button>
@@ -469,7 +545,7 @@
 
       ul.querySelectorAll('[data-open-bookmark]').forEach((btn) => {
         btn.addEventListener('click', async () => {
-          const id = btn.getAttribute('data-open-bookmark');
+          const id = decodeURIComponent(btn.getAttribute('data-open-bookmark') || '');
           const b = state.bookmarks.find((x) => x.id === id);
           if (!b) return;
           document.getElementById('bookmarksModal').classList.add('hidden');
@@ -515,12 +591,15 @@
         state.searchQuery = e.target.value;
         applyFilters();
       });
+      const hadithScroll = document.getElementById('hadithScroll');
+      const scrollListTop = () => hadithScroll?.scrollTo({ top: 0, behavior: 'smooth' });
+
       document.getElementById('btnPrevPage').addEventListener('click', () => {
-        if (state.page > 1) { state.page -= 1; renderPage(); }
+        if (state.page > 1) { state.page -= 1; renderPage(); scrollListTop(); }
       });
       document.getElementById('btnNextPage').addEventListener('click', () => {
         const totalPages = Math.ceil(state.filteredHadiths.length / PAGE_SIZE) || 1;
-        if (state.page < totalPages) { state.page += 1; renderPage(); }
+        if (state.page < totalPages) { state.page += 1; renderPage(); scrollListTop(); }
       });
 
       document.getElementById('btnOpenBookmarks').addEventListener('click', () => {
@@ -534,9 +613,14 @@
         refreshShareInstallModal();
         document.getElementById('installModal').classList.remove('hidden');
       });
+      const installModal = document.getElementById('installModal');
+      const bookmarksModal = document.getElementById('bookmarksModal');
       document.getElementById('closeInstallModal').addEventListener('click', () => {
-        document.getElementById('installModal').classList.add('hidden');
+        installModal.classList.add('hidden');
       });
+      bindModalBackdropClose(installModal, () => installModal.classList.add('hidden'));
+      bindModalBackdropClose(bookmarksModal, () => bookmarksModal.classList.add('hidden'));
+
       document.getElementById('btnCopyAppLink').addEventListener('click', () => copyAppPublicLink(document.getElementById('btnCopyAppLink')));
       document.getElementById('btnNativeShareApp').addEventListener('click', () => nativeShareAppLink());
     });

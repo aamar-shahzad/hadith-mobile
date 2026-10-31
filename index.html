@@ -131,8 +131,23 @@
   <div id="installModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-dark-card border border-dark-border rounded-2xl p-5 max-w-sm w-full shadow-2xl">
       <h3 class="font-bold text-white text-sm mb-2">Install Hadith Mobile</h3>
-      <p class="text-xs text-slate-300 mb-3">Open on your phone, then add to home screen for a full-screen app.</p>
-      <a id="officialLink" href="https://aamar-shahzad.github.io/hadith-mobile/" class="text-[11px] text-brand-400 break-all block mb-3">https://aamar-shahzad.github.io/hadith-mobile/</a>
+      <p class="text-xs text-slate-300 mb-3">Scan the QR code on another device, or open the link on your phone.</p>
+      <div class="flex gap-3 items-start mb-3">
+        <div class="min-w-0 flex-1">
+          <a id="officialLink" href="https://aamar-shahzad.github.io/hadith-mobile/" class="text-[11px] text-brand-400 break-all underline underline-offset-2">https://aamar-shahzad.github.io/hadith-mobile/</a>
+        </div>
+        <div class="shrink-0 text-center">
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&amp;margin=6&amp;data=https%3A%2F%2Faamar-shahzad.github.io%2Fhadith-mobile%2F"
+            width="96"
+            height="96"
+            alt="QR code to open Hadith Mobile"
+            class="rounded-lg border border-brand-500/30 bg-white p-1"
+            loading="lazy"
+          >
+          <p class="text-[10px] text-slate-400 mt-1">Scan to install</p>
+        </div>
+      </div>
       <ul class="text-[11px] text-slate-400 space-y-1 mb-4 list-disc list-inside">
         <li><strong class="text-slate-200">Android:</strong> Chrome → Install app</li>
         <li><strong class="text-slate-200">iPhone:</strong> Safari → Share → Add to Home Screen</li>

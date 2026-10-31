@@ -36,15 +36,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
   <style>
-    body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    html { height: 100%; background-color: #0f172a; }
+    body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; min-height: 100dvh; }
+    @media (display-mode: standalone) {
+      body {
+        padding-top: max(env(safe-area-inset-top, 0px), 28px);
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+      }
+    }
     .arabic-text { font-family: 'Amiri', serif; line-height: 2.2; }
-    .pt-safe { padding-top: env(safe-area-inset-top, 0.75rem); }
+    .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0.75rem); }
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
   </style>
 </head>
-<body class="bg-dark-bg text-slate-100 flex flex-col h-screen overflow-hidden antialiased">
+<body class="bg-dark-bg text-slate-100 flex flex-col h-[100dvh] overflow-hidden antialiased">
   <div id="appUpdateBanner" class="hidden fixed bottom-16 left-3 right-3 z-[70] bg-brand-600 text-white text-xs rounded-xl px-4 py-3 shadow-xl border border-brand-500 flex items-center justify-between gap-3">
     <span>New version available</span>
     <button type="button" id="btnApplyAppUpdate" class="shrink-0 bg-white text-brand-800 font-bold px-3 py-1.5 rounded-lg">Update</button>
@@ -60,7 +68,7 @@
           window.location.reload();
         });
 
-        navigator.serviceWorker.register('sw.js?v=5').then((registration) => {
+        navigator.serviceWorker.register('sw.js?v=6').then((registration) => {
           registration.addEventListener('updatefound', () => {
             const worker = registration.installing;
             if (!worker) return;
@@ -402,7 +410,7 @@
     function populateSections() {
       sectionSelect.innerHTML = '<option value="all">All chapters</option>';
       getSectionEntries(state.metadata?.sections).forEach(([index, title]) => {
-        if (!title || index === '0') return;
+        if (!title || !String(title).trim()) return;
         const opt = document.createElement('option');
         opt.value = String(index);
         const label = title.length > 52 ? `${title.slice(0, 49)}…` : title;
@@ -415,20 +423,26 @@
     function applyFilters() {
       let list = state.allHadiths;
       if (state.sectionKey !== 'all') {
-        const det = state.metadata?.section_details?.[String(state.sectionKey)];
-        if (det) {
-          list = list.filter(
-            (h) => h.hadithnumber >= det.hadithnumber_first && h.hadithnumber <= det.hadithnumber_last
-          );
+        // section_details hadithnumber ranges overlap/drift in several editions; reference.book is exact.
+        const hasBookRefs = list.some((h) => h.reference && h.reference.book != null);
+        if (hasBookRefs) {
+          list = list.filter((h) => String(h.reference?.book) === String(state.sectionKey));
+        } else {
+          const det = state.metadata?.section_details?.[String(state.sectionKey)];
+          if (det) {
+            list = list.filter(
+              (h) => h.hadithnumber >= det.hadithnumber_first && h.hadithnumber <= det.hadithnumber_last
+            );
+          }
         }
       }
       const q = state.searchQuery.trim().toLowerCase();
       if (q) {
-        list = list.filter((h) => {
-          const num = String(h.hadithnumber);
-          const ar = String(h.arabicnumber || '');
-          return num.includes(q) || ar.includes(q) || (h.text && h.text.toLowerCase().includes(q));
-        });
+        const isNumericQuery = /^\d+(\.\d+)?$/.test(q);
+        const textMatches = (h) => Boolean(h.text && h.text.toLowerCase().includes(q));
+        const numberMatches = (h) => String(h.hadithnumber) === q || String(h.arabicnumber || '') === q;
+        const byNumber = isNumericQuery ? list.filter(numberMatches) : [];
+        list = byNumber.length ? byNumber : list.filter(textMatches);
       }
       state.filteredHadiths = list;
       state.page = 1;
@@ -455,7 +469,12 @@
       hadithList.innerHTML = slice.map((h) => {
         const bookmarked = isBookmarked(h);
         const grades = formatHadithGrades(h.grades);
-        const ref = h.reference ? `Book ${h.reference.book}, Hadith ${h.reference.hadith}` : '';
+        const refBookTitle = h.reference ? getSectionEntries(state.metadata?.sections).find(([idx]) => idx === String(h.reference.book))?.[1] : '';
+        const refBookLabel = h.reference && h.reference.book > 0 ? `Book ${h.reference.book}` : '';
+        const ref = h.reference
+          ? [refBookLabel, refBookTitle ? String(refBookTitle).trim() : '', `Hadith ${h.reference.hadith}`].filter(Boolean).join(' · ')
+          : '';
+        const bodyText = h.text && h.text.trim() ? escapeHtml(h.text) : '<span class="italic text-slate-500">Text not available in this edition.</span>';
         const textClass = state.isRtl ? 'arabic-text text-right text-lg text-amber-100/95' : 'text-sm text-slate-200 leading-relaxed';
         const dir = state.isRtl ? 'rtl' : 'ltr';
         return `
@@ -467,7 +486,7 @@
                 <button type="button" data-bookmark="${h.hadithnumber}" class="p-1.5 ${bookmarked ? 'text-brand-500' : 'text-slate-400 hover:text-white'} rounded-lg hover:bg-slate-800" title="Bookmark"><i class="${bookmarked ? 'ph-fill' : 'ph'} ph-bookmark-simple"></i></button>
               </div>
             </div>
-            <p class="${textClass}">${escapeHtml(h.text || '')}</p>
+            <p class="${textClass}">${bodyText}</p>
             ${grades ? `<p class="mt-2 text-[10px] text-emerald-400/90">Grade: ${escapeHtml(grades)}</p>` : ''}
             ${ref ? `<p class="mt-1 text-[10px] text-slate-500">${escapeHtml(ref)}</p>` : ''}
           </article>`;

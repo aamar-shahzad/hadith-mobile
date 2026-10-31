@@ -587,9 +587,13 @@
         state.sectionKey = sectionSelect.value;
         applyFilters();
       });
+      let searchDebounceTimer = null;
       searchInput.addEventListener('input', (e) => {
-        state.searchQuery = e.target.value;
-        applyFilters();
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+          state.searchQuery = e.target.value;
+          applyFilters();
+        }, 200);
       });
       const hadithScroll = document.getElementById('hadithScroll');
       const scrollListTop = () => hadithScroll?.scrollTo({ top: 0, behavior: 'smooth' });

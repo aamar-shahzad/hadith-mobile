@@ -1,4 +1,4 @@
-const CACHE_NAME = "hadith-mobile-v6";
+const CACHE_NAME = "hadith-mobile-v7";
 
 function isAppShellRequest(url) {
   try {

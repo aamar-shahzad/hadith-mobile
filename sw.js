@@ -1,33 +1,73 @@
-const CACHE_NAME = "hadith-mobile-v7";
+const CACHE_NAME = "hadith-mobile-v8";
+const ASSETS_CACHE = "hadith-mobile-assets-v1";
+
+function scopeBasePath() {
+  try {
+    const path = new URL(self.location.href).pathname;
+    const dir = path.replace(/\/[^/]*$/, "/");
+    return dir.endsWith("/") ? dir : `${dir}/`;
+  } catch {
+    return "/";
+  }
+}
 
 function isAppShellRequest(url) {
   try {
-    const path = new URL(url).pathname;
-    return (
-      path.includes("/hadith-mobile") &&
-      (path.endsWith("/hadith-mobile/") ||
-        path.endsWith("/hadith-mobile") ||
-        path.endsWith("/index.html") ||
-        path.includes("manifest.webmanifest") ||
-        path.includes("/icons/") ||
-        path.endsWith("/sw.js"))
-    );
+    const u = new URL(url);
+    const path = u.pathname;
+    const base = scopeBasePath();
+    if (path.endsWith("/sw.js") || path.includes("manifest.webmanifest") || path.includes("/icons/")) {
+      return true;
+    }
+    if (base !== "/" && path.startsWith(base)) {
+      return path === base || path.endsWith("/index.html") || path.endsWith(base.slice(0, -1));
+    }
+    return path.endsWith("/index.html") || path === "/" || path.endsWith("/");
   } catch {
     return false;
   }
+}
+
+function isRuntimeAsset(url) {
+  return (
+    url.includes("cdn.tailwindcss.com") ||
+    url.includes("unpkg.com/@phosphor-icons") ||
+    url.includes("fonts.googleapis.com") ||
+    url.includes("fonts.gstatic.com")
+  );
 }
 
 function isHadithDataRequest(url) {
   return url.includes("cdn.jsdelivr.net/gh/fawazahmed0/hadith-api");
 }
 
+async function cachePut(request, response, cacheName) {
+  if (!response || !response.ok) return;
+  const cache = await caches.open(cacheName);
+  await cache.put(request, response.clone());
+}
+
+async function staleWhileRevalidateAsset(request) {
+  const cached = await caches.match(request);
+  const fetchPromise = fetch(request)
+    .then((res) => {
+      if (res.ok) cachePut(request, res, ASSETS_CACHE);
+      return res;
+    })
+    .catch(() => null);
+  if (cached) {
+    fetchPromise.catch(() => {});
+    return cached;
+  }
+  const networkRes = await fetchPromise;
+  return networkRes || Response.error();
+}
+
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
-self.addEventListener("install", (event) => {
-  self.skipWaiting();
-});
+self.addEventListener("install", () => {});
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -35,7 +75,7 @@ self.addEventListener("activate", (event) => {
       .keys()
       .then((keys) =>
         Promise.all(
-          keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)),
+          keys.filter((key) => key !== CACHE_NAME && key !== ASSETS_CACHE).map((key) => caches.delete(key)),
         ),
       )
       .then(() => self.clients.claim()),
@@ -44,36 +84,47 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-
   const url = event.request.url;
 
   if (event.request.mode === "navigate" || isAppShellRequest(url)) {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
+      (async () => {
+        try {
+          const response = await fetch(event.request);
           if (response.ok && isAppShellRequest(url)) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            event.waitUntil(cachePut(event.request, response, CACHE_NAME));
           }
           return response;
-        })
-        .catch(() => caches.match(event.request)),
+        } catch {
+          const cached =
+            (await caches.match(event.request, { ignoreSearch: true })) ||
+            (await caches.match(scopeBasePath() + "index.html")) ||
+            (await caches.match("index.html"));
+          return cached || Response.error();
+        }
+      })(),
     );
+    return;
+  }
+
+  if (isRuntimeAsset(url)) {
+    event.respondWith(staleWhileRevalidateAsset(event.request));
     return;
   }
 
   if (isHadithDataRequest(url)) {
     event.respondWith(
-      caches.match(event.request).then((cached) => {
+      (async () => {
+        const cached = await caches.match(event.request);
         if (cached) return cached;
-        return fetch(event.request).then((res) => {
-          if (res.ok) {
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
+        try {
+          const res = await fetch(event.request);
+          if (res.ok) event.waitUntil(cachePut(event.request, res, CACHE_NAME));
           return res;
-        });
-      }),
+        } catch {
+          return cached || Response.error();
+        }
+      })(),
     );
   }
 });

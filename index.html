@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
   <script>
     /* Platform detection for design language: iOS -> Apple HIG, Android -> Material 3 */
@@ -21,12 +21,12 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Hadith Mobile">
+  <meta name="apple-mobile-web-app-title" content="Hadith">
   <meta name="description" content="Mobile Hadith reader — Kutub al-Sittah and more, multilingual, offline-friendly PWA">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <title>Hadith Mobile</title>
+  <title>Hadith</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -48,7 +48,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
   <style>
     html { height: 100%; background-color: #0f172a; }
     body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; min-height: 100dvh; }
@@ -403,12 +403,13 @@
       window.addEventListener('load', () => {
         let refreshing = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!navigator.serviceWorker.controller) return;
           if (refreshing) return;
           refreshing = true;
           window.location.reload();
         });
 
-        navigator.serviceWorker.register('sw.js?v=7').then((registration) => {
+        navigator.serviceWorker.register('sw.js?v=8').then((registration) => {
           registration.addEventListener('updatefound', () => {
             const worker = registration.installing;
             if (!worker) return;
@@ -439,24 +440,19 @@
       <div class="flex items-center gap-3 min-w-0">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center text-slate-950 font-bold shadow-sm shrink-0">📜</div>
         <div class="min-w-0">
-          <h1 class="font-bold text-sm text-white truncate">Hadith Mobile</h1>
+          <h1 class="font-bold text-sm text-white truncate">Hadith</h1>
           <p id="headerSubtitle" class="text-[11px] text-slate-400 truncate">Loading…</p>
         </div>
       </div>
-      <div class="flex items-center gap-1 shrink-0">
-        <a href="https://aamar-shahzad.github.io/quran-mobile/" class="p-2 text-slate-400 hover:text-brand-400 rounded-xl hover:bg-slate-800 transition" title="Quran app">
-          <i class="ph ph-book-open-text text-lg"></i>
-        </a>
-        <button type="button" id="btnOpenSourcesModal" class="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition" title="Data sources">
-          <i class="ph ph-info text-lg"></i>
-        </button>
-        <button type="button" id="btnOpenInstallGuide" class="p-2 text-brand-400 hover:text-white rounded-xl hover:bg-slate-800 transition" title="Share link & install app">
-          <i class="ph ph-share-network text-lg"></i>
-        </button>
-        <button type="button" id="btnOpenBookmarks" class="p-2 text-slate-300 hover:text-white rounded-xl hover:bg-slate-800 transition relative" title="Bookmarks">
+      <div class="flex items-center gap-0.5 shrink-0">
+        <button type="button" id="btnFocusSearch" class="p-2 text-slate-300 hover:text-white rounded-xl hover:bg-slate-800 transition" aria-label="Search"><i class="ph ph-magnifying-glass text-lg"></i></button>
+        <button type="button" id="btnOpenBookmarks" class="p-2 text-slate-300 hover:text-white rounded-xl hover:bg-slate-800 transition relative" aria-label="Bookmarks">
           <i class="ph ph-bookmark-simple text-lg"></i>
           <span id="bookmarkDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full"></span>
         </button>
+        <button type="button" id="btnHadithMore" class="p-2 text-slate-300 hover:text-white rounded-xl hover:bg-slate-800 transition" aria-label="More"><i class="ph ph-dots-three-circle text-lg"></i></button>
+        <button type="button" id="btnOpenSourcesModal" class="hidden" aria-hidden="true"></button>
+        <button type="button" id="btnOpenInstallGuide" class="hidden" aria-hidden="true"></button>
       </div>
     </div>
   </header>
@@ -468,7 +464,8 @@
       </select>
       <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
     </div>
-    <div class="grid grid-cols-2 gap-2">
+    <button type="button" id="btnToggleFilters" class="w-full text-left text-xs px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300">Filters · edition &amp; chapter</button>
+    <div id="hadithFiltersPanel" class="hidden grid grid-cols-2 gap-2">
       <div class="relative">
         <select id="editionSelect" class="w-full bg-slate-950 border border-slate-800 text-slate-300 text-[11px] rounded-xl py-2 px-2 pr-6 appearance-none focus:outline-none focus:border-brand-500 truncate"></select>
         <i class="ph ph-caret-down absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-xs"></i>
@@ -483,6 +480,15 @@
     <div class="relative">
       <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
       <input id="searchInput" type="search" placeholder="Search hadith text or number…" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-brand-500" autocomplete="off">
+    </div>
+  </div>
+
+  <div id="hadithMoreModal" class="hidden fixed inset-0 bg-slate-950/80 z-50 flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="bg-dark-card border border-dark-border rounded-2xl p-4 max-w-sm w-full space-y-2">
+      <div class="flex justify-between items-center mb-2"><h3 class="font-bold text-sm text-white">Menu</h3><button type="button" id="closeHadithMore" class="text-slate-400 p-1" aria-label="Close"><i class="ph ph-x text-lg"></i></button></div>
+      <a href="https://aamar-shahzad.github.io/quran-mobile/" class="block px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-slate-200">Quran app</a>
+      <button type="button" id="btnMoreSources" class="w-full text-left px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-slate-200">Data sources</button>
+      <button type="button" id="btnMoreInstall" class="w-full text-left px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-sm text-brand-300">Share &amp; install</button>
     </div>
   </div>
 
@@ -536,7 +542,7 @@
       </div>
       <div class="bg-brand-600/10 border border-brand-500/20 rounded-xl p-4 text-center mb-4">
         <p class="text-[11px] text-slate-300 mb-3">Scan with a phone camera, or share the link in WhatsApp, iMessage, etc.</p>
-        <img id="shareInstallQr" width="140" height="140" alt="QR code to open Hadith Mobile" class="mx-auto rounded-xl border-2 border-brand-500/40 bg-white p-2 shadow-lg" loading="lazy">
+        <img id="shareInstallQr" width="140" height="140" alt="QR code to open Hadith" class="mx-auto rounded-xl border-2 border-brand-500/40 bg-white p-2 shadow-lg" loading="lazy">
         <p class="text-[10px] text-slate-400 mt-2">Opens in browser — then add to home screen</p>
         <a id="officialLink" href="https://aamar-shahzad.github.io/hadith-mobile/" class="mt-3 block text-[11px] text-brand-400 break-all underline underline-offset-2">https://aamar-shahzad.github.io/hadith-mobile/</a>
         <div class="grid grid-cols-1 gap-2 mt-3">
@@ -595,7 +601,7 @@
       if (navigator.share) {
         try {
           await navigator.share({
-            title: 'Hadith Mobile',
+            title: 'Hadith',
             text: 'Read hadith on your phone — open this link:',
             url: APP_PUBLIC_URL
           });
@@ -622,8 +628,8 @@
 
     const state = {
       catalog: null,
-      collectionKey: localStorage.getItem('hadith_collection') || 'bukhari',
-      editionName: localStorage.getItem('hadith_edition') || 'eng-bukhari',
+      collectionKey: safeStorageGet('hadith_collection' , 'bukhari'),
+      editionName: safeStorageGet('hadith_edition' , 'eng-bukhari'),
       sectionKey: 'all',
       allHadiths: [],
       filteredHadiths: [],
@@ -633,7 +639,7 @@
       searchQuery: '',
       bookmarks: (() => {
         try {
-          return JSON.parse(localStorage.getItem('hadith_bookmarks_v1') || '[]');
+          return readJsonArray('hadith_bookmarks_v1');
         } catch {
           return [];
         }
@@ -649,6 +655,16 @@
     const headerSubtitle = document.getElementById('headerSubtitle');
     const pageLabel = document.getElementById('pageLabel');
     const searchInput = document.getElementById('searchInput');
+
+    function safeStorageGet(key, fallback = '') {
+      try { const v = localStorage.getItem(key); return v == null ? fallback : v; } catch { return fallback; }
+    }
+    function safeStorageSet(key, value) {
+      try { localStorage.setItem(key, value); return true; } catch { return false; }
+    }
+    function readJsonArray(key) {
+      try { const parsed = JSON.parse(safeStorageGet(key, '[]')); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+    }
 
     function escapeHtml(str) {
       return String(str)
@@ -673,7 +689,7 @@
     }
 
     function saveBookmarks() {
-      localStorage.setItem('hadith_bookmarks_v1', JSON.stringify(state.bookmarks));
+      safeStorageSet('hadith_bookmarks_v1', JSON.stringify(state.bookmarks));
       updateBookmarkDot();
     }
 
@@ -692,7 +708,7 @@
     function populateEditions() {
       const collection = state.catalog[collectionSelect.value];
       state.collectionKey = collectionSelect.value;
-      localStorage.setItem('hadith_collection', state.collectionKey);
+      safeStorageSet('hadith_collection', state.collectionKey);
       if (!collection || !collection.collection) return;
 
       editionSelect.innerHTML = '';
@@ -879,7 +895,7 @@
 
       state.editionName = edition.name;
       state.isRtl = edition.direction === 'rtl';
-      localStorage.setItem('hadith_edition', state.editionName);
+      safeStorageSet('hadith_edition', state.editionName);
       state.sectionKey = 'all';
       sectionSelect.value = 'all';
 
@@ -956,6 +972,18 @@
         populateEditions();
         loadEdition();
       });
+      document.getElementById('btnHadithMore')?.addEventListener('click', () => document.getElementById('hadithMoreModal')?.classList.remove('hidden'));
+      document.getElementById('closeHadithMore')?.addEventListener('click', () => document.getElementById('hadithMoreModal')?.classList.add('hidden'));
+      document.getElementById('btnMoreSources')?.addEventListener('click', () => {
+        document.getElementById('hadithMoreModal')?.classList.add('hidden');
+        document.getElementById('sourcesModal')?.classList.remove('hidden');
+      });
+      document.getElementById('btnMoreInstall')?.addEventListener('click', () => {
+        document.getElementById('hadithMoreModal')?.classList.add('hidden');
+        document.getElementById('installModal')?.classList.remove('hidden');
+      });
+      document.getElementById('btnToggleFilters')?.addEventListener('click', () => document.getElementById('hadithFiltersPanel')?.classList.toggle('hidden'));
+      document.getElementById('btnFocusSearch')?.addEventListener('click', () => document.getElementById('searchInput')?.focus());
       editionSelect.addEventListener('change', () => {
         state.editionName = editionSelect.value;
         loadEdition();

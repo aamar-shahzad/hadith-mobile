@@ -1,10 +1,10 @@
 {
-  "id": "/hadith-mobile/",
+  "id": "./",
   "name": "Hadith",
   "short_name": "Hadith",
   "description": "Search and read authentic hadith collections",
-  "start_url": "/hadith-mobile/",
-  "scope": "/hadith-mobile/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",

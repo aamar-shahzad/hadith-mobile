@@ -1,4 +1,4 @@
-const CACHE_NAME = "hadith-mobile-v8";
+const CACHE_NAME = "hadith-mobile-v9";
 const ASSETS_CACHE = "hadith-mobile-assets-v1";
 
 function scopeBasePath() {

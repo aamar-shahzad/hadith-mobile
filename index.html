@@ -409,7 +409,7 @@
           window.location.reload();
         });
 
-        navigator.serviceWorker.register('sw.js?v=8').then((registration) => {
+        navigator.serviceWorker.register('sw.js?v=9').then((registration) => {
           registration.addEventListener('updatefound', () => {
             const worker = registration.installing;
             if (!worker) return;
@@ -508,7 +508,7 @@
   </footer>
 
   <!-- Bookmarks modal -->
-  <div id="bookmarksModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+  <div id="bookmarksModal" class="hidden fixed inset-0 bg-slate-950/80" role="dialog" aria-modal="true" backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
     <div class="bg-dark-card border border-dark-border rounded-2xl p-4 max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl">
       <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
         <h2 class="font-bold text-sm text-white">Saved hadith</h2>
@@ -518,7 +518,7 @@
     </div>
   </div>
 
-  <div id="sourcesModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div id="sourcesModal" class="hidden fixed inset-0 bg-slate-950/80" role="dialog" aria-modal="true" backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-dark-card border border-dark-border rounded-2xl p-5 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
         <h3 class="font-bold text-sm text-white flex items-center gap-2"><i class="ph ph-database text-brand-400"></i> Authentic data sources</h3>
@@ -534,7 +534,7 @@
   </div>
 
   <!-- Share & install -->
-  <div id="installModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div id="installModal" class="hidden fixed inset-0 bg-slate-950/80" role="dialog" aria-modal="true" backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-dark-card border border-dark-border rounded-2xl p-5 max-w-sm w-full shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-3">
         <h3 class="font-bold text-white text-sm flex items-center gap-2"><i class="ph ph-share-network text-brand-400"></i> Share & Install</h3>

@@ -26,25 +26,8 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="assets/app.css">
   <title>Hadith</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309' },
-            dark: { bg: '#0f172a', card: '#1e293b', border: '#334155' }
-          },
-          fontFamily: {
-            amiri: ['Amiri', 'serif'],
-            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
-          }
-        }
-      }
-    };
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -409,7 +392,7 @@
           window.location.reload();
         });
 
-        navigator.serviceWorker.register('sw.js?v=9').then((registration) => {
+        navigator.serviceWorker.register('sw.js?v=10').then((registration) => {
           registration.addEventListener('updatefound', () => {
             const worker = registration.installing;
             if (!worker) return;
@@ -508,21 +491,21 @@
   </footer>
 
   <!-- Bookmarks modal -->
-  <div id="bookmarksModal" class="hidden fixed inset-0 bg-slate-950/80" role="dialog" aria-modal="true" backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+  <div id="bookmarksModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="bookmarksModalTitle">
     <div class="bg-dark-card border border-dark-border rounded-2xl p-4 max-w-md w-full max-h-[80vh] flex flex-col shadow-2xl">
       <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-        <h2 class="font-bold text-sm text-white">Saved hadith</h2>
-        <button type="button" id="closeBookmarksModal" class="text-slate-400 hover:text-white p-1"><i class="ph ph-x text-lg"></i></button>
+        <h2 id="bookmarksModalTitle" class="font-bold text-sm text-white">Saved hadith</h2>
+        <button type="button" id="closeBookmarksModal" class="text-slate-400 hover:text-white p-1" aria-label="Close"><i class="ph ph-x text-lg"></i></button>
       </div>
       <ul id="bookmarksList" class="overflow-y-auto flex-1 space-y-2 text-xs"></ul>
     </div>
   </div>
 
-  <div id="sourcesModal" class="hidden fixed inset-0 bg-slate-950/80" role="dialog" aria-modal="true" backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div id="sourcesModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="sourcesModalTitle">
     <div class="bg-dark-card border border-dark-border rounded-2xl p-5 max-w-md w-full shadow-2xl max-h-[85vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
-        <h3 class="font-bold text-sm text-white flex items-center gap-2"><i class="ph ph-database text-brand-400"></i> Authentic data sources</h3>
-        <button type="button" id="closeSourcesModal" class="text-slate-400 hover:text-white p-1"><i class="ph ph-x text-lg"></i></button>
+        <h3 id="sourcesModalTitle" class="font-bold text-sm text-white flex items-center gap-2"><i class="ph ph-database text-brand-400"></i> Authentic data sources</h3>
+        <button type="button" id="closeSourcesModal" class="text-slate-400 hover:text-white p-1" aria-label="Close"><i class="ph ph-x text-lg"></i></button>
       </div>
       <div class="text-[11px] text-slate-300 space-y-3">
         <p>Hadith text is loaded from the open <strong class="text-slate-200">hadith-api</strong> project — standard collections (Bukhari, Muslim, Sunan, etc.) in multiple languages.</p>
@@ -534,11 +517,11 @@
   </div>
 
   <!-- Share & install -->
-  <div id="installModal" class="hidden fixed inset-0 bg-slate-950/80" role="dialog" aria-modal="true" backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div id="installModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="installModalTitle">
     <div class="bg-dark-card border border-dark-border rounded-2xl p-5 max-w-sm w-full shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-3">
-        <h3 class="font-bold text-white text-sm flex items-center gap-2"><i class="ph ph-share-network text-brand-400"></i> Share & Install</h3>
-        <button type="button" id="closeInstallModal" class="text-slate-400 hover:text-white p-1"><i class="ph ph-x text-lg"></i></button>
+        <h3 id="installModalTitle" class="font-bold text-white text-sm flex items-center gap-2"><i class="ph ph-share-network text-brand-400"></i> Share & Install</h3>
+        <button type="button" id="closeInstallModal" class="text-slate-400 hover:text-white p-1" aria-label="Close"><i class="ph ph-x text-lg"></i></button>
       </div>
       <div class="bg-brand-600/10 border border-brand-500/20 rounded-xl p-4 text-center mb-4">
         <p class="text-[11px] text-slate-300 mb-3">Scan with a phone camera, or share the link in WhatsApp, iMessage, etc.</p>
@@ -585,15 +568,36 @@
       if (openBtn) openBtn.href = APP_PUBLIC_URL;
     }
 
-    async function copyAppPublicLink(buttonEl) {
+    async function copyTextToClipboard(text, successMessage) {
+      const done = () => showToast(successMessage || 'Copied');
       try {
-        await navigator.clipboard.writeText(APP_PUBLIC_URL);
-        const label = buttonEl?.querySelector('span');
-        const prev = label?.textContent || 'Copy link';
-        if (label) label.textContent = 'Copied!';
-        setTimeout(() => { if (label) label.textContent = prev; }, 2000);
+        await navigator.clipboard.writeText(text);
+        done();
       } catch {
-        window.prompt('Copy this link:', APP_PUBLIC_URL);
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          done();
+        } catch {
+          showToast('Could not copy');
+        }
+      }
+    }
+
+    async function copyAppPublicLink(buttonEl) {
+      await copyTextToClipboard(APP_PUBLIC_URL, 'Link copied');
+      const label = buttonEl?.querySelector('span');
+      if (label) {
+        const prev = label.textContent;
+        label.textContent = 'Copied!';
+        setTimeout(() => { label.textContent = prev || 'Copy link'; }, 2000);
       }
     }
 
@@ -749,6 +753,53 @@
       });
     }
 
+    let modalFocusTrap = null;
+    let modalReturnFocus = null;
+
+    function getFocusableElements(root) {
+      return [...root.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(
+        (el) => !el.disabled,
+      );
+    }
+
+    function trapFocusInModal(modal) {
+      modalFocusTrap?.();
+      const onKeyDown = (e) => {
+        if (e.key !== 'Tab') return;
+        const focusables = getFocusableElements(modal);
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      };
+      modal.addEventListener('keydown', onKeyDown);
+      modalFocusTrap = () => {
+        modal.removeEventListener('keydown', onKeyDown);
+        modalFocusTrap = null;
+      };
+    }
+
+    function openAppModal(id) {
+      const modal = document.getElementById(id);
+      if (!modal) return;
+      modalReturnFocus = document.activeElement;
+      modal.classList.remove('hidden');
+      trapFocusInModal(modal);
+      getFocusableElements(modal)[0]?.focus();
+    }
+
+    function closeAppModal(id) {
+      modalFocusTrap?.();
+      document.getElementById(id)?.classList.add('hidden');
+      modalReturnFocus?.focus?.();
+    }
+
     function formatHadithGrades(grades) {
       if (!grades) return '';
       const list = Array.isArray(grades) ? grades : [grades];
@@ -855,7 +906,7 @@
           if (!h) return;
           const label = COLLECTION_LABELS[state.collectionKey] || state.collectionKey;
           const text = `${label} ${h.hadithnumber}\n\n${h.text}`;
-          navigator.clipboard?.writeText(text).then(() => showToast('Hadith copied')).catch(() => window.prompt('Copy:', text));
+          copyTextToClipboard(text, 'Hadith copied');
         });
       });
 
@@ -941,7 +992,7 @@
           const id = decodeURIComponent(btn.getAttribute('data-open-bookmark') || '');
           const b = state.bookmarks.find((x) => x.id === id);
           if (!b) return;
-          document.getElementById('bookmarksModal').classList.add('hidden');
+          closeAppModal('bookmarksModal');
           collectionSelect.value = b.collectionKey;
           populateEditions();
           editionSelect.value = b.editionName;
@@ -972,15 +1023,16 @@
         populateEditions();
         loadEdition();
       });
-      document.getElementById('btnHadithMore')?.addEventListener('click', () => document.getElementById('hadithMoreModal')?.classList.remove('hidden'));
-      document.getElementById('closeHadithMore')?.addEventListener('click', () => document.getElementById('hadithMoreModal')?.classList.add('hidden'));
+      document.getElementById('btnHadithMore')?.addEventListener('click', () => openAppModal('hadithMoreModal'));
+      document.getElementById('closeHadithMore')?.addEventListener('click', () => closeAppModal('hadithMoreModal'));
       document.getElementById('btnMoreSources')?.addEventListener('click', () => {
-        document.getElementById('hadithMoreModal')?.classList.add('hidden');
-        document.getElementById('sourcesModal')?.classList.remove('hidden');
+        closeAppModal('hadithMoreModal');
+        openAppModal('sourcesModal');
       });
       document.getElementById('btnMoreInstall')?.addEventListener('click', () => {
-        document.getElementById('hadithMoreModal')?.classList.add('hidden');
-        document.getElementById('installModal')?.classList.remove('hidden');
+        closeAppModal('hadithMoreModal');
+        refreshShareInstallModal();
+        openAppModal('installModal');
       });
       document.getElementById('btnToggleFilters')?.addEventListener('click', () => document.getElementById('hadithFiltersPanel')?.classList.toggle('hidden'));
       document.getElementById('btnFocusSearch')?.addEventListener('click', () => document.getElementById('searchInput')?.focus());
@@ -1013,27 +1065,31 @@
 
       document.getElementById('btnOpenBookmarks').addEventListener('click', () => {
         renderBookmarksList();
-        document.getElementById('bookmarksModal').classList.remove('hidden');
+        openAppModal('bookmarksModal');
       });
-      document.getElementById('closeBookmarksModal').addEventListener('click', () => {
-        document.getElementById('bookmarksModal').classList.add('hidden');
-      });
+      document.getElementById('closeBookmarksModal').addEventListener('click', () => closeAppModal('bookmarksModal'));
       const sourcesModal = document.getElementById('sourcesModal');
-      document.getElementById('btnOpenSourcesModal').addEventListener('click', () => sourcesModal.classList.remove('hidden'));
-      document.getElementById('closeSourcesModal').addEventListener('click', () => sourcesModal.classList.add('hidden'));
-      bindModalBackdropClose(sourcesModal, () => sourcesModal.classList.add('hidden'));
+      document.getElementById('btnOpenSourcesModal').addEventListener('click', () => openAppModal('sourcesModal'));
+      document.getElementById('closeSourcesModal').addEventListener('click', () => closeAppModal('sourcesModal'));
+      bindModalBackdropClose(sourcesModal, () => closeAppModal('sourcesModal'));
 
       document.getElementById('btnOpenInstallGuide').addEventListener('click', () => {
         refreshShareInstallModal();
-        document.getElementById('installModal').classList.remove('hidden');
+        openAppModal('installModal');
       });
       const installModal = document.getElementById('installModal');
       const bookmarksModal = document.getElementById('bookmarksModal');
-      document.getElementById('closeInstallModal').addEventListener('click', () => {
-        installModal.classList.add('hidden');
+      document.getElementById('closeInstallModal').addEventListener('click', () => closeAppModal('installModal'));
+      bindModalBackdropClose(installModal, () => closeAppModal('installModal'));
+      bindModalBackdropClose(bookmarksModal, () => closeAppModal('bookmarksModal'));
+      bindModalBackdropClose(document.getElementById('hadithMoreModal'), () => closeAppModal('hadithMoreModal'));
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        const openModals = [...document.querySelectorAll('[id$="Modal"]:not(.hidden)')];
+        if (!openModals.length) return;
+        closeAppModal(openModals[openModals.length - 1].id);
       });
-      bindModalBackdropClose(installModal, () => installModal.classList.add('hidden'));
-      bindModalBackdropClose(bookmarksModal, () => bookmarksModal.classList.add('hidden'));
 
       document.getElementById('btnCopyAppLink').addEventListener('click', () => copyAppPublicLink(document.getElementById('btnCopyAppLink')));
       document.getElementById('btnNativeShareApp').addEventListener('click', () => nativeShareAppLink());

@@ -1,5 +1,7 @@
-const CACHE_NAME = "hadith-mobile-v9";
+const CACHE_NAME = "hadith-mobile-v10";
 const ASSETS_CACHE = "hadith-mobile-assets-v1";
+const PRECACHE_TIMEOUT_MS = 6000;
+const NETWORK_TIMEOUT_MS = 4000;
 
 function scopeBasePath() {
   try {
@@ -16,7 +18,12 @@ function isAppShellRequest(url) {
     const u = new URL(url);
     const path = u.pathname;
     const base = scopeBasePath();
-    if (path.endsWith("/sw.js") || path.includes("manifest.webmanifest") || path.includes("/icons/")) {
+    if (
+      path.endsWith("/sw.js") ||
+      path.includes("manifest.webmanifest") ||
+      path.includes("/icons/") ||
+      path.includes("/assets/")
+    ) {
       return true;
     }
     if (base !== "/" && path.startsWith(base)) {
@@ -30,7 +37,6 @@ function isAppShellRequest(url) {
 
 function isRuntimeAsset(url) {
   return (
-    url.includes("cdn.tailwindcss.com") ||
     url.includes("unpkg.com/@phosphor-icons") ||
     url.includes("fonts.googleapis.com") ||
     url.includes("fonts.gstatic.com")
@@ -39,6 +45,15 @@ function isRuntimeAsset(url) {
 
 function isHadithDataRequest(url) {
   return url.includes("cdn.jsdelivr.net/gh/fawazahmed0/hadith-api");
+}
+
+function fetchWithTimeout(request, ms) {
+  return Promise.race([
+    fetch(request),
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("timeout")), ms);
+    }),
+  ]);
 }
 
 async function cachePut(request, response, cacheName) {
@@ -63,11 +78,38 @@ async function staleWhileRevalidateAsset(request) {
   return networkRes || Response.error();
 }
 
+function precacheShellUrls() {
+  const base = scopeBasePath();
+  return [
+    `${base}index.html`,
+    `${base}manifest.webmanifest`,
+    `${base}assets/app.css`,
+    `${base}icons/icon-192.png`,
+    `${base}icons/icon-512.png`,
+  ];
+}
+
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
-self.addEventListener("install", () => {});
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      await Promise.allSettled(
+        precacheShellUrls().map(async (url) => {
+          try {
+            const res = await fetchWithTimeout(url, PRECACHE_TIMEOUT_MS);
+            if (res.ok) await cache.put(url, res);
+          } catch {
+            /* skip */
+          }
+        }),
+      );
+    })(),
+  );
+});
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -90,7 +132,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       (async () => {
         try {
-          const response = await fetch(event.request);
+          const response = await fetchWithTimeout(event.request, NETWORK_TIMEOUT_MS);
           if (response.ok && isAppShellRequest(url)) {
             event.waitUntil(cachePut(event.request, response, CACHE_NAME));
           }
@@ -118,7 +160,7 @@ self.addEventListener("fetch", (event) => {
         const cached = await caches.match(event.request);
         if (cached) return cached;
         try {
-          const res = await fetch(event.request);
+          const res = await fetchWithTimeout(event.request, NETWORK_TIMEOUT_MS);
           if (res.ok) event.waitUntil(cachePut(event.request, res, CACHE_NAME));
           return res;
         } catch {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "hadith-mobile-v10";
+const CACHE_NAME = "hadith-mobile-v11";
 const ASSETS_CACHE = "hadith-mobile-assets-v1";
 const PRECACHE_TIMEOUT_MS = 6000;
 const NETWORK_TIMEOUT_MS = 4000;
@@ -57,16 +57,20 @@ function fetchWithTimeout(request, ms) {
 }
 
 async function cachePut(request, response, cacheName) {
-  if (!response || !response.ok) return;
-  const cache = await caches.open(cacheName);
-  await cache.put(request, response.clone());
+  if (!response || !response.ok || response.bodyUsed) return;
+  try {
+    const cache = await caches.open(cacheName);
+    await cache.put(request, response);
+  } catch {
+    /* clone/body already consumed */
+  }
 }
 
 async function staleWhileRevalidateAsset(request) {
   const cached = await caches.match(request);
   const fetchPromise = fetch(request)
     .then((res) => {
-      if (res.ok) cachePut(request, res, ASSETS_CACHE);
+      if (res.ok) cachePut(request, res.clone(), ASSETS_CACHE).catch(() => {});
       return res;
     })
     .catch(() => null);

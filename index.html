@@ -392,7 +392,7 @@
           window.location.reload();
         });
 
-        navigator.serviceWorker.register('sw.js?v=10').then((registration) => {
+        navigator.serviceWorker.register('sw.js?v=11').then((registration) => {
           registration.addEventListener('updatefound', () => {
             const worker = registration.installing;
             if (!worker) return;
